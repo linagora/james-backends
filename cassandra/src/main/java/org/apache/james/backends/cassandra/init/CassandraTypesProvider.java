@@ -19,13 +19,11 @@
 
 package org.apache.james.backends.cassandra.init;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.UserType;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.james.backends.cassandra.components.CassandraModule;
 import org.apache.james.backends.cassandra.components.CassandraType;
@@ -33,16 +31,17 @@ import org.apache.james.backends.cassandra.components.CassandraType;
 public class CassandraTypesProvider {
     private final ImmutableMap<String, UserType> userTypes;
 
-    public CassandraTypesProvider(List<CassandraModule> modules, Session session) {
-        userTypes = ImmutableMap.copyOf(modules.stream()
-            .flatMap(module -> module.moduleTypes().stream())
-            .collect(
+    public CassandraTypesProvider(CassandraModule module, Session session) {
+        userTypes = module.moduleTypes()
+            .stream()
+            .collect(Collectors.collectingAndThen(
                 Collectors.toMap(
                     CassandraType::getName,
                     type -> session.getCluster()
-                    .getMetadata()
-                    .getKeyspace(session.getLoggedKeyspace())
-                    .getUserType(type.getName()))));
+                        .getMetadata()
+                        .getKeyspace(session.getLoggedKeyspace())
+                        .getUserType(type.getName())),
+                ImmutableMap::copyOf));
     }
 
     public UserType getDefinedUserType(String typeName) {

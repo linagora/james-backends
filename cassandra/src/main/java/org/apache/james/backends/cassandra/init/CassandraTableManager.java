@@ -19,35 +19,30 @@
 
 package org.apache.james.backends.cassandra.init;
 
-import java.util.List;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.google.common.collect.ImmutableList;
 import org.apache.james.backends.cassandra.components.CassandraModule;
 
 public class CassandraTableManager {
 
     private final Session session;
-    private final ImmutableList<CassandraModule> modules;
+    private final CassandraModule module;
 
-    public CassandraTableManager(List<CassandraModule> modules, Session session) {
+    public CassandraTableManager(CassandraModule module, Session session) {
         this.session = session;
-        this.modules = ImmutableList.copyOf(modules);
+        this.module = module;
     }
 
     public CassandraTableManager ensureAllTables() {
-        modules.stream()
-            .flatMap(module -> module.moduleTables().stream())
+        module.moduleTables().stream()
             .forEach(table -> session.execute(table.getCreateStatement()));
-        modules.stream()
-            .flatMap(module -> module.moduleIndex().stream())
+        module.moduleIndex().stream()
             .forEach(index -> session.execute(index.getCreateIndexStatement()));
         return this;
     }
 
     public void clearAllTables() {
-        modules.stream()
-            .flatMap(module -> module.moduleTables().stream())
+        module.moduleTables().stream()
             .forEach(table -> clearTable(table.getName()));
     }
 
